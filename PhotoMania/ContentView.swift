@@ -7,15 +7,74 @@
 
 import SwiftUI
 
-struct ContentView: View {
-    var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundColor(.accentColor)
-            Text("Hello, world!")
+class ViewModel: ObservableObject{
+    
+    @Published var image: Image?
+    
+    func fetchNewImage(){
+        guard let url = URL(string:"https://random.imagecdn.app/500/500")
+        else{
+            return
         }
-        .padding()
+        
+        let task = URLSession.shared.dataTask(with: url) { data, __, _ in
+            guard let data = data else {return}
+            
+            DispatchQueue.main.async {
+                guard let uiImage = UIImage(data: data) else{
+                    return
+                }
+                self.image = Image(uiImage: uiImage)
+            }
+        }
+        task.resume()
+    }
+}
+
+struct ContentView: View {
+   @StateObject var viewModel = ViewModel()
+    
+    var body: some View {
+        NavigationView{
+            VStack(alignment: .center) {
+                Spacer()
+                
+                if let image = viewModel.image{
+                    ZStack {
+                        image
+                           .resizable()
+                           .foregroundColor(Color.indigo)
+                           .frame(width: 400, height: 500)
+                           .padding()
+                    }
+                    .frame(width: UIScreen.main.bounds.width / 1.5, height: UIScreen.main.bounds.width / 1.5)
+                } else {
+                    Image(systemName: "photo")
+                       .resizable()
+                       .foregroundColor(Color.indigo)
+                       .frame(width: 300, height: 300)
+                       .padding()
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    viewModel.fetchNewImage()
+                    
+                }, label: {
+                    Text("Next Image")
+                        .bold()
+                        .frame(width: 200, height: 40)
+                        .padding()
+                        .background(Color.blue.opacity(0.6))
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
+                }
+            )}
+            .padding()
+            .navigationTitle("Photo Mania")
+        }
+        
     }
 }
 
